@@ -63,9 +63,9 @@ resource "azurerm_linux_web_app" "alwa" {
   }
 
   app_settings = {
-    "WEBSITE_RUN_FROM_PACKAGE"        = "0"
+    "WEBSITE_RUN_FROM_PACKAGE"            = "0"
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "true"
-    "NEXTCLOUD_DATA_DIR"              = "/home/site/wwwroot/data"
+    "NEXTCLOUD_DATA_DIR"                  = "/home/site/wwwroot/data"
   }
 
   tags = var.tags
