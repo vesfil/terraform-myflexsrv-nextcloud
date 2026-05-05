@@ -76,6 +76,8 @@ jobs:
 
       - name: Download, Zip and Upload to Blob Storage
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
         run: |
           echo "📥 Downloading latest Nextcloud..."
           curl -L -o nextcloud.zip https://download.nextcloud.com/server/releases/latest.zip
@@ -89,13 +91,12 @@ jobs:
           cd ..
           
           echo "☁️ Uploading to Azure Blob Storage..."
-          az storage container create --name nextcloud-deploy --account-name stnextcloud2026 --auth-mode login
+          az storage container create --name nextcloud-deploy --connection-string "$AZURE_STORAGE_CONNECTION_STRING"
           az storage blob upload \
             --container-name nextcloud-deploy \
             --name app.zip \
             --file app.zip \
-            --account-name stnextcloud2026 \
-            --auth-mode login \
+            --connection-string "$AZURE_STORAGE_CONNECTION_STRING" \
             --overwrite
           
           SAS_URL=$(az storage blob generate-sas \
@@ -103,8 +104,7 @@ jobs:
             --name app.zip \
             --permissions r \
             --expiry $(date -u -d '+30 minutes' '+%Y-%m-%dT%H:%M:%SZ') \
-            --account-name stnextcloud2026 \
-            --auth-mode login \
+            --connection-string "$AZURE_STORAGE_CONNECTION_STRING" \
             --full-uri)
           
           echo "SAS_URL=$SAS_URL" >> $GITHUB_ENV
