@@ -29,10 +29,10 @@ provider "azurerm" {
 resource "random_integer" "ri" {
   min = 10
   max = 99
-}
-
-resource "terraform_data" "trigger" {
-  input = timestamp()
+  keepers = {
+    # Винаги се променя при всяко apply
+    timestamp = timestamp()
+  }
 }
 
 # Resource Group
