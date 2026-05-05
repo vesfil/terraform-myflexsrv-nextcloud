@@ -45,7 +45,7 @@ resource "azurerm_service_plan" "asp" {
   resource_group_name = azurerm_resource_group.arg.name
   location            = azurerm_resource_group.arg.location
   os_type             = "Linux"
-  sku_name            = "B1"  # Basic план (има разход)
+  sku_name            = "B1" # Basic план (има разход)
 }
 
 # Linux Web App с Docker образ на Nextcloud
