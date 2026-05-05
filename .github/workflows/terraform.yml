@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      force_new:
+        description: 'Create new resources (yes/no)'
+        required: true
+        default: 'no'
+        type: choice
+        options:
+          - yes
+          - no
 
 env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -22,11 +31,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 👇 Добавяме Azure login най-отгоре, за да е активен за всички стъпки
       - name: Login to Azure
         uses: azure/login@v1
         with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+          enable-AzPSSession: true
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -44,6 +56,16 @@ jobs:
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
+
+      - name: Force New Resources (if selected)
+        if: github.event.inputs.force_new == 'yes'
+        run: |
+          echo "⚠️ FORCE NEW MODE - Destroying old resources..."
+          terraform init
+          terraform destroy -auto-approve || true
+          rm -f terraform.tfstate*
+          rm -rf .terraform
+          echo "✅ Old resources destroyed, state cleared"
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -70,7 +92,6 @@ jobs:
           zip -r ../app.zip .
           cd ..
           
-          # 👇 Вече сме логнати в Azure, тази стъпка ще работи
           az webapp deploy \
             --name ${{ steps.webapp.outputs.webapp_name }} \
             --resource-group ${{ steps.webapp.outputs.resource_group }} \
