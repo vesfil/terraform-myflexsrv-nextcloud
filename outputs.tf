@@ -26,6 +26,6 @@ output "mysql_fqdn" {
 }
 
 output "mysql_admin_username" {
-  value = var.mysql_admin_username
+  value     = var.mysql_admin_username
   sensitive = true
 }

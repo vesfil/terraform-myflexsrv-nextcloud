@@ -57,15 +57,15 @@ resource "azurerm_mysql_server" "mysql" {
   resource_group_name = azurerm_resource_group.arg.name
   location            = azurerm_resource_group.arg.location
 
-  sku_name = "B_Gen5_1"   # Basic план, 1 vCore, поддържан от учебния акаунт
+  sku_name = "B_Gen5_1" # Basic план, 1 vCore, поддържан от учебния акаунт
 
-  storage_mb = 5120  # 5 GB - минимално
+  storage_mb = 5120 # 5 GB - минимално
 
   administrator_login          = var.mysql_admin_username
   administrator_login_password = var.mysql_admin_password
 
-  version                = "8.0"
-  ssl_enforcement_enabled = false   # За тестови цели (за production включи SSL в connection string)
+  version                 = "8.0"
+  ssl_enforcement_enabled = false # За тестови цели (за production включи SSL в connection string)
 
   tags = var.tags
 }
