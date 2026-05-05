@@ -6,7 +6,7 @@ variable "resource_group_name" {
 
 variable "location" {
   type        = string
-  description = "Azure region (must be F1-supported)"
+  description = "Azure region"
   default     = "switzerlandnorth"
 }
 
@@ -17,25 +17,13 @@ variable "app_service_plan_name" {
 }
 
 # ============================================
-# MySQL променливи (Single Server - Basic план)
+# MySQL променливи (за Docker контейнера)
 # ============================================
-variable "mysql_server_name" {
+variable "mysql_root_password" {
   type        = string
-  description = "MySQL server name"
-  default     = "mysql-nextcloud"
-}
-
-variable "mysql_admin_username" {
-  type        = string
-  description = "MySQL admin username"
-  default     = "mysqladmin"
-}
-
-variable "mysql_admin_password" {
-  type        = string
-  description = "MySQL admin password (must be at least 8 chars, containing uppercase, lowercase, numbers, special chars)"
+  description = "MySQL root password"
   sensitive   = true
-  default     = "MyP@ssw0rd123!"
+  default     = "MyRootP@ssw0rd123!"
 }
 
 variable "mysql_database_name" {
@@ -44,9 +32,19 @@ variable "mysql_database_name" {
   default     = "nextclouddb"
 }
 
-# ============================================
-# Общи променливи
-# ============================================
+variable "mysql_user" {
+  type        = string
+  description = "MySQL user"
+  default     = "nextclouduser"
+}
+
+variable "mysql_password" {
+  type        = string
+  description = "MySQL password"
+  sensitive   = true
+  default     = "MyP@ssw0rd123!"
+}
+
 variable "tags" {
   type        = map(string)
   description = "Tags to apply to resources"

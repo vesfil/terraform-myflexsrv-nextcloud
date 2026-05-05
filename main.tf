@@ -20,8 +20,7 @@ terraform {
 }
 
 provider "azurerm" {
-  features {
-  }
+  features {}
   subscription_id = "45ab7c0b-0483-4cfa-b5bb-498a103b8661"
 }
 
@@ -49,46 +48,7 @@ resource "azurerm_service_plan" "asp" {
   sku_name            = "F1"
 }
 
-# ============================================
-# MySQL Single Server (Basic план - поддържан от учебния акаунт)
-# ============================================
-resource "azurerm_mysql_server" "mysql" {
-  name                = "${var.mysql_server_name}-${random_integer.ri.result}"
-  resource_group_name = azurerm_resource_group.arg.name
-  location            = azurerm_resource_group.arg.location
-
-  sku_name = "B_Gen5_1" # Basic план, 1 vCore, поддържан от учебния акаунт
-
-  storage_mb = 5120 # 5 GB - минимално
-
-  administrator_login          = var.mysql_admin_username
-  administrator_login_password = var.mysql_admin_password
-
-  version                 = "8.0"
-  ssl_enforcement_enabled = false # За тестови цели (за production включи SSL в connection string)
-
-  tags = var.tags
-}
-
-# MySQL Database
-resource "azurerm_mysql_database" "mysql_db" {
-  name                = var.mysql_database_name
-  resource_group_name = azurerm_resource_group.arg.name
-  server_name         = azurerm_mysql_server.mysql.name
-  charset             = "utf8mb4"
-  collation           = "utf8mb4_unicode_ci"
-}
-
-# Firewall Rule - позволява на Azure услуги (вкл. App Service) да се свързват
-resource "azurerm_mysql_firewall_rule" "allow_azure_services" {
-  name                = "AllowAllAzureServices"
-  resource_group_name = azurerm_resource_group.arg.name
-  server_name         = azurerm_mysql_server.mysql.name
-  start_ip_address    = "0.0.0.0"
-  end_ip_address      = "0.0.0.0"
-}
-
-# Linux Web App (PHP за Nextcloud)
+# Linux Web App с PHP и MySQL Docker контейнер
 resource "azurerm_linux_web_app" "alwa" {
   name                = "${var.app_service_plan_name}-${random_integer.ri.result}"
   resource_group_name = azurerm_resource_group.arg.name
@@ -104,12 +64,11 @@ resource "azurerm_linux_web_app" "alwa" {
 
   app_settings = {
     "WEBSITE_RUN_FROM_PACKAGE" = "0"
-  }
-
-  connection_string {
-    name  = "DefaultConnection"
-    type  = "MySQL"
-    value = "Database=${azurerm_mysql_database.mysql_db.name};Data Source=${azurerm_mysql_server.mysql.fqdn};User Id=${var.mysql_admin_username}@${azurerm_mysql_server.mysql.name};Password=${var.mysql_admin_password}"
+    # MySQL конфигурация (в паметта, за тест)
+    "MYSQL_ROOT_PASSWORD" = var.mysql_root_password
+    "MYSQL_DATABASE"      = var.mysql_database_name
+    "MYSQL_USER"          = var.mysql_user
+    "MYSQL_PASSWORD"      = var.mysql_password
   }
 
   tags = var.tags
