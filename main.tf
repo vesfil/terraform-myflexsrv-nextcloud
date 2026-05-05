@@ -39,16 +39,16 @@ resource "azurerm_resource_group" "arg" {
   location = var.location
 }
 
-# App Service Plan (Linux, F1 - безплатен)
+# App Service Plan (Linux, B1 - поддържа Docker)
 resource "azurerm_service_plan" "asp" {
   name                = "${var.app_service_plan_name}-${random_integer.ri.result}"
   resource_group_name = azurerm_resource_group.arg.name
   location            = azurerm_resource_group.arg.location
   os_type             = "Linux"
-  sku_name            = "F1"
+  sku_name            = "B1"  # Basic план (има разход)
 }
 
-# Linux Web App с PHP за Nextcloud (използва SQLite)
+# Linux Web App с Docker образ на Nextcloud
 resource "azurerm_linux_web_app" "alwa" {
   name                = "${var.app_service_plan_name}-${random_integer.ri.result}"
   resource_group_name = azurerm_resource_group.arg.name
@@ -56,17 +56,20 @@ resource "azurerm_linux_web_app" "alwa" {
   service_plan_id     = azurerm_service_plan.asp.id
 
   site_config {
-    application_stack {
-      php_version = "8.2"
-    }
     always_on = false
+    application_stack {
+      docker_image     = "nextcloud"
+      docker_image_tag = "latest"
+    }
   }
 
   app_settings = {
-    "WEBSITE_RUN_FROM_PACKAGE"            = "0"
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "true"
-    "PHPIZE_EXTENSIONS"                   = "gd mbstring xml json pdo_mysql curl zip gmp bcmath intl"
     "NEXTCLOUD_DATA_DIR"                  = "/home/site/wwwroot/data"
+    "MYSQL_DATABASE"                      = var.mysql_database_name
+    "MYSQL_USER"                          = var.mysql_user
+    "MYSQL_PASSWORD"                      = var.mysql_password
+    "MYSQL_HOST"                          = "localhost"
   }
 
   tags = var.tags
