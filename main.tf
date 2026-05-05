@@ -63,10 +63,11 @@ resource "azurerm_linux_web_app" "alwa" {
   }
 
   app_settings = {
-    "WEBSITE_RUN_FROM_PACKAGE"            = "0"
-    "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "true"
-    "NEXTCLOUD_DATA_DIR"                  = "/home/site/wwwroot/data"
-  }
+  "WEBSITE_RUN_FROM_PACKAGE"           = "0"
+  "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "true"
+  "PHPIZE_EXTENSIONS"                  = "gd mbstring xml json pdo_mysql curl zip gmp bcmath intl"
+  "NEXTCLOUD_DATA_DIR"                 = "/home/site/wwwroot/data"
+}
 
   tags = var.tags
 }
