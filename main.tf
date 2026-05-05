@@ -25,8 +25,8 @@ provider "azurerm" {
 }
 
 resource "random_integer" "ri" {
-  min = 10000
-  max = 99999
+  min = 10
+  max = 99
 }
 
 resource "terraform_data" "trigger" {
@@ -48,7 +48,7 @@ resource "azurerm_service_plan" "asp" {
   sku_name            = "F1"
 }
 
-# Linux Web App с PHP и MySQL Docker контейнер
+# Linux Web App с PHP за Nextcloud (използва SQLite)
 resource "azurerm_linux_web_app" "alwa" {
   name                = "${var.app_service_plan_name}-${random_integer.ri.result}"
   resource_group_name = azurerm_resource_group.arg.name
@@ -63,12 +63,9 @@ resource "azurerm_linux_web_app" "alwa" {
   }
 
   app_settings = {
-    "WEBSITE_RUN_FROM_PACKAGE" = "0"
-    # MySQL конфигурация (в паметта, за тест)
-    "MYSQL_ROOT_PASSWORD" = var.mysql_root_password
-    "MYSQL_DATABASE"      = var.mysql_database_name
-    "MYSQL_USER"          = var.mysql_user
-    "MYSQL_PASSWORD"      = var.mysql_password
+    "WEBSITE_RUN_FROM_PACKAGE"        = "0"
+    "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "true"
+    "NEXTCLOUD_DATA_DIR"              = "/home/site/wwwroot/data"
   }
 
   tags = var.tags

@@ -6,7 +6,7 @@ variable "resource_group_name" {
 
 variable "location" {
   type        = string
-  description = "Azure region"
+  description = "Azure region (must be F1-supported)"
   default     = "switzerlandnorth"
 }
 
@@ -14,35 +14,6 @@ variable "app_service_plan_name" {
   type        = string
   description = "App Service Plan name"
   default     = "asp-nextcloud"
-}
-
-# ============================================
-# MySQL променливи (за Docker контейнера)
-# ============================================
-variable "mysql_root_password" {
-  type        = string
-  description = "MySQL root password"
-  sensitive   = true
-  default     = "MyRootP@ssw0rd123!"
-}
-
-variable "mysql_database_name" {
-  type        = string
-  description = "MySQL database name"
-  default     = "nextclouddb"
-}
-
-variable "mysql_user" {
-  type        = string
-  description = "MySQL user"
-  default     = "nextclouduser"
-}
-
-variable "mysql_password" {
-  type        = string
-  description = "MySQL password"
-  sensitive   = true
-  default     = "MyP@ssw0rd123!"
 }
 
 variable "tags" {
