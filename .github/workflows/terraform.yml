@@ -74,10 +74,8 @@ jobs:
           echo "webapp_name=$(terraform output -raw web_app_name)" >> $GITHUB_OUTPUT
           echo "resource_group=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
 
-      - name: Download, Zip and Upload to Blob Storage
+      - name: Download, Zip and Deploy Nextcloud
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        env:
-          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
         run: |
           echo "📥 Downloading latest Nextcloud..."
           curl -L -o nextcloud.zip https://download.nextcloud.com/server/releases/latest.zip
@@ -90,35 +88,31 @@ jobs:
           zip -r ../app.zip .
           cd ..
           
-          echo "☁️ Uploading to Azure Blob Storage..."
-          az storage container create --name nextcloud-deploy --connection-string "$AZURE_STORAGE_CONNECTION_STRING"
-          az storage blob upload \
-            --container-name nextcloud-deploy \
-            --name app.zip \
-            --file app.zip \
-            --connection-string "$AZURE_STORAGE_CONNECTION_STRING" \
-            --overwrite
+          echo "🚀 Deploying to ${{ steps.webapp.outputs.webapp_name }} (this may take 5-10 minutes)..."
           
-          SAS_URL=$(az storage blob generate-sas \
-            --container-name nextcloud-deploy \
-            --name app.zip \
-            --permissions r \
-            --expiry $(date -u -d '+30 minutes' '+%Y-%m-%dT%H:%M:%SZ') \
-            --connection-string "$AZURE_STORAGE_CONNECTION_STRING" \
-            --full-uri)
+          # Опитваме deploy с таймаут 10 минути и 3 retry-та
+          for i in 1 2 3; do
+            echo "Attempt $i..."
+            if az webapp deploy \
+              --name ${{ steps.webapp.outputs.webapp_name }} \
+              --resource-group ${{ steps.webapp.outputs.resource_group }} \
+              --src-path app.zip \
+              --type zip \
+              --timeout 600 \
+              --verbose; then
+              echo "✅ Deployment succeeded on attempt $i"
+              break
+            else
+              echo "⚠️ Deployment attempt $i failed. Waiting 30 seconds before retry..."
+              sleep 30
+              if [ $i -eq 3 ]; then
+                echo "❌ All 3 deployment attempts failed"
+                exit 1
+              fi
+            fi
+          done
           
-          echo "SAS_URL=$SAS_URL" >> $GITHUB_ENV
-
-      - name: Deploy from Blob Storage
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: |
-          echo "🚀 Setting WEBSITE_RUN_FROM_PACKAGE..."
-          az webapp config appsettings set \
-            --name ${{ steps.webapp.outputs.webapp_name }} \
-            --resource-group ${{ steps.webapp.outputs.resource_group }} \
-            --settings WEBSITE_RUN_FROM_PACKAGE="$SAS_URL"
-          
-          echo "✅ Nextcloud deployed successfully from Blob Storage!"
+          echo "✅ Nextcloud deployed successfully!"
 
       - name: Verify deployment
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
