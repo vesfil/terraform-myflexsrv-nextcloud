@@ -6,7 +6,7 @@ variable "resource_group_name" {
 
 variable "location" {
   type        = string
-  description = "Azure region (must be F1-supported). Recommended: switzerlandnorth"
+  description = "Azure region"
   default     = "switzerlandnorth"
 }
 
@@ -16,37 +16,28 @@ variable "app_service_plan_name" {
   default     = "asp-nextcloud"
 }
 
-variable "web_app_name" {
+variable "sql_server_name" {
   type        = string
-  description = "Web App name"
-  default     = "nextcloud"
+  description = "SQL Server name"
+  default     = "sql-nextcloud"
 }
 
-# ============================================
-# MySQL променливи
-# ============================================
-variable "mysql_server_name" {
+variable "sql_admin_name" {
   type        = string
-  description = "MySQL server name"
-  default     = "mysql-nextcloud"
+  description = "SQL Server admin username"
+  default     = "sqladmin"
 }
 
-variable "mysql_admin_username" {
+variable "sql_admin_password" {
   type        = string
-  description = "MySQL admin username"
-  default     = "mysqladmin"
-}
-
-variable "mysql_admin_password" {
-  type        = string
-  description = "MySQL admin password (must be at least 8 chars, containing uppercase, lowercase, numbers, special chars)"
+  description = "SQL Server admin password"
   sensitive   = true
   default     = "MyP@ssw0rd123!"
 }
 
-variable "mysql_database_name" {
+variable "sql_database_name" {
   type        = string
-  description = "MySQL database name"
+  description = "SQL Database name"
   default     = "nextclouddb"
 }
 
@@ -54,12 +45,6 @@ variable "firewall_rule_name" {
   type        = string
   description = "Firewall rule name"
   default     = "AllowAllAzureServices"
-}
-
-variable "github_repository_url" {
-  type        = string
-  description = "GitHub repository URL"
-  default     = "https://github.com/vesfil/terraform-myflexsrv-nextcloud"
 }
 
 variable "tags" {

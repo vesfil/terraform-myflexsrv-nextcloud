@@ -51,40 +51,27 @@ resource "azurerm_service_plan" "asp" {
 }
 
 # ============================================
-# MySQL Flexible Server (най-евтиният вариант B1ms)
+# SQL Server (проверено, че работи с твоя акаунт)
 # ============================================
-resource "azurerm_mysql_flexible_server" "mysql" {
-  name                = "${var.mysql_server_name}-${random_integer.ri.result}"
-  resource_group_name = azurerm_resource_group.arg.name
-  location            = azurerm_resource_group.arg.location
-
-  # B1ms е най-евтиният план (~0.1449 ¥/час)
-  sku_name = "GP_Standard_DS1_v2"
-
-  administrator_login    = var.mysql_admin_username
-  administrator_password = var.mysql_admin_password
-
-  version = "8.0.21"
-  zone    = "1"
-
-  storage {
-    size_gb            = 20
-    auto_grow_enabled  = true
-    io_scaling_enabled = true
-  }
-
-  tags = var.tags
+resource "azurerm_mssql_server" "sqlserver" {
+  name                         = "${var.sql_server_name}-${random_integer.ri.result}"
+  resource_group_name          = azurerm_resource_group.arg.name
+  location                     = azurerm_resource_group.arg.location
+  version                      = "12.0"
+  administrator_login          = var.sql_admin_name
+  administrator_login_password = var.sql_admin_password
 }
 
-# MySQL Database
-resource "azurerm_mysql_flexible_database" "mysql_db" {
-  name                = var.mysql_database_name
-  resource_group_name = azurerm_resource_group.arg.name
-  server_name         = azurerm_mysql_flexible_server.mysql.name
-  charset             = "utf8mb4"
-  collation           = "utf8mb4_unicode_ci"
+resource "azurerm_mssql_database" "database" {
+  name                 = var.sql_database_name
+  server_id            = azurerm_mssql_server.sqlserver.id
+  collation            = "SQL_Latin1_General_CP1_CI_AS"
+  license_type         = "LicenseIncluded"
+  max_size_gb          = 2
+  sku_name             = "S0"
+  zone_redundant       = false
+  storage_account_type = "Local"
 }
-
 # Firewall Rule - позволява на Azure услуги (вкл. App Service) да се свързват
 resource "azurerm_mysql_flexible_server_firewall_rule" "allow_azure_services" {
   name                = "AllowAllAzureServices"
@@ -103,7 +90,7 @@ resource "azurerm_linux_web_app" "alwa" {
 
   site_config {
     application_stack {
-      dotnet_version = "6.0"
+      dotnet_version = "8.0"
     }
     always_on        = false
     app_command_line = "dotnet Homies.dll"
@@ -112,9 +99,10 @@ resource "azurerm_linux_web_app" "alwa" {
   # Connection string за MySQL
   connection_string {
     name  = "DefaultConnection"
-    type  = "MySQL"
-    value = "Server=${azurerm_mysql_flexible_server.mysql.fqdn};Database=${azurerm_mysql_flexible_database.mysql_db.name};Uid=${var.mysql_admin_username};Pwd=${var.mysql_admin_password};SslMode=Preferred;"
+    type  = "SQLAzure"
+    value = "Data Source=tcp:${azurerm_mssql_server.sqlserver.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.database.name};User ID=${azurerm_mssql_server.sqlserver.administrator_login};Password=${var.sql_admin_password};Trusted_Connection=False;MultipleActiveResultSets=True;Encrypt=True;"
   }
+
 
   tags = var.tags
 }
