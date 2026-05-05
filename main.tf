@@ -59,7 +59,7 @@ resource "azurerm_mysql_flexible_server" "mysql" {
   location            = azurerm_resource_group.arg.location
 
   # B1ms е най-евтиният план (~0.1449 ¥/час)
-  sku_name = "B1ms"
+  sku_name = "GP_Standard_DS1_v2"
 
   administrator_login    = var.mysql_admin_username
   administrator_password = var.mysql_admin_password
