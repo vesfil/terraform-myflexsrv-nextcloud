@@ -31,6 +31,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Това е работещата версия – само creds, без други параметри!
       - name: Login to Azure
         uses: azure/login@v1
         with:
