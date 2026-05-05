@@ -43,13 +43,12 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve tfplan
 
-      - name: Get Web App Name
+      - name: Get Web App Name and Resource Group
         id: webapp
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
-          WEBAPP_NAME=$(terraform output -raw web_app_name)
-          echo "webapp_name=$WEBAPP_NAME" >> $GITHUB_OUTPUT
-          echo "Resource Group: ${{ steps.webapp.outputs.resource_group }}"
+          echo "webapp_name=$(terraform output -raw web_app_name)" >> $GITHUB_OUTPUT
+          echo "resource_group=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
 
       - name: Download and Deploy Nextcloud
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -65,9 +64,10 @@ jobs:
           zip -r ../app.zip .
           cd ..
           
+          # 👇 KEY FIX: Използваме resource_group от Terraform output
           az webapp deploy \
-            --resource-group ${{ steps.webapp.outputs.resource_group }} \
             --name ${{ steps.webapp.outputs.webapp_name }} \
+            --resource-group ${{ steps.webapp.outputs.resource_group }} \
             --src-path app.zip \
             --type zip
           
@@ -76,5 +76,4 @@ jobs:
       - name: Verify deployment
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
-          echo "✅ Infrastructure and Nextcloud deployed successfully!"
-          echo "📍 Your Nextcloud is available at: https://${{ steps.webapp.outputs.webapp_name }}.azurewebsites.net"
+          echo "✅ Nextcloud is available at: https://${{ steps.webapp.outputs.webapp_name }}.azurewebsites.net"
