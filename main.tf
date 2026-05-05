@@ -54,25 +54,25 @@ resource "azurerm_service_plan" "asp" {
 # MySQL Flexible Server (най-евтиният вариант B1ms)
 # ============================================
 resource "azurerm_mysql_flexible_server" "mysql" {
-  name                   = "${var.mysql_server_name}-${random_integer.ri.result}"
-  resource_group_name    = azurerm_resource_group.arg.name
-  location               = azurerm_resource_group.arg.location
-  
+  name                = "${var.mysql_server_name}-${random_integer.ri.result}"
+  resource_group_name = azurerm_resource_group.arg.name
+  location            = azurerm_resource_group.arg.location
+
   # B1ms е най-евтиният план (~0.1449 ¥/час)
-  sku_name               = "B1ms"
-  
+  sku_name = "B1ms"
+
   administrator_login    = var.mysql_admin_username
   administrator_password = var.mysql_admin_password
-  
-  version                = "8.0.21"
-  zone                   = "1"
-  
+
+  version = "8.0.21"
+  zone    = "1"
+
   storage {
     size_gb            = 20
     auto_grow_enabled  = true
     io_scaling_enabled = true
   }
-  
+
   tags = var.tags
 }
 
@@ -105,16 +105,16 @@ resource "azurerm_linux_web_app" "alwa" {
     application_stack {
       dotnet_version = "6.0"
     }
-    always_on = false
+    always_on        = false
     app_command_line = "dotnet Homies.dll"
   }
-  
+
   # Connection string за MySQL
   connection_string {
     name  = "DefaultConnection"
     type  = "MySQL"
     value = "Server=${azurerm_mysql_flexible_server.mysql.fqdn};Database=${azurerm_mysql_flexible_database.mysql_db.name};Uid=${var.mysql_admin_username};Pwd=${var.mysql_admin_password};SslMode=Preferred;"
   }
-  
+
   tags = var.tags
 }
