@@ -72,13 +72,12 @@ resource "azurerm_mssql_database" "database" {
   zone_redundant       = false
   storage_account_type = "Local"
 }
-# Firewall Rule - позволява на Azure услуги (вкл. App Service) да се свързват
-resource "azurerm_mysql_flexible_server_firewall_rule" "allow_azure_services" {
-  name                = "AllowAllAzureServices"
-  resource_group_name = azurerm_resource_group.arg.name
-  server_name         = azurerm_mysql_flexible_server.mysql.name
-  start_ip_address    = "0.0.0.0"
-  end_ip_address      = "0.0.0.0"
+
+resource "azurerm_mssql_firewall_rule" "firewallrule" {
+  name             = var.firewall_rule_name
+  server_id        = azurerm_mssql_server.sqlserver.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
 }
 
 # Linux Web App (.NET 6)
