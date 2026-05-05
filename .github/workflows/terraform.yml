@@ -88,11 +88,13 @@ jobs:
           zip -r ../app.zip .
           cd ..
           
+          # Добавих --timeout 600 за големия ZIP файл
           az webapp deploy \
             --name ${{ steps.webapp.outputs.webapp_name }} \
             --resource-group ${{ steps.webapp.outputs.resource_group }} \
             --src-path app.zip \
-            --type zip
+            --type zip \
+            --timeout 1000
           
           echo "✅ Nextcloud deployed successfully!"
 
