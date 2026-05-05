@@ -74,7 +74,7 @@ jobs:
           echo "webapp_name=$(terraform output -raw web_app_name)" >> $GITHUB_OUTPUT
           echo "resource_group=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
 
-      - name: Download and Deploy Nextcloud
+      - name: Download, Zip and Upload to Blob Storage
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           echo "📥 Downloading latest Nextcloud..."
@@ -83,20 +83,42 @@ jobs:
           echo "📦 Extracting Nextcloud files..."
           unzip -q nextcloud.zip
           
-          echo "🚀 Deploying to ${{ steps.webapp.outputs.webapp_name }}..."
+          echo "🔨 Creating ZIP package..."
           cd nextcloud
           zip -r ../app.zip .
           cd ..
           
-          # Добавих --timeout 600 за големия ZIP файл
-          az webapp deploy \
+          echo "☁️ Uploading to Azure Blob Storage..."
+          az storage container create --name nextcloud-deploy --account-name stnextcloud2026 --auth-mode login
+          az storage blob upload \
+            --container-name nextcloud-deploy \
+            --name app.zip \
+            --file app.zip \
+            --account-name stnextcloud2026 \
+            --auth-mode login \
+            --overwrite
+          
+          SAS_URL=$(az storage blob generate-sas \
+            --container-name nextcloud-deploy \
+            --name app.zip \
+            --permissions r \
+            --expiry $(date -u -d '+30 minutes' '+%Y-%m-%dT%H:%M:%SZ') \
+            --account-name stnextcloud2026 \
+            --auth-mode login \
+            --full-uri)
+          
+          echo "SAS_URL=$SAS_URL" >> $GITHUB_ENV
+
+      - name: Deploy from Blob Storage
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "🚀 Setting WEBSITE_RUN_FROM_PACKAGE..."
+          az webapp config appsettings set \
             --name ${{ steps.webapp.outputs.webapp_name }} \
             --resource-group ${{ steps.webapp.outputs.resource_group }} \
-            --src-path app.zip \
-            --type zip \
-            --timeout 1000
+            --settings WEBSITE_RUN_FROM_PACKAGE="$SAS_URL"
           
-          echo "✅ Nextcloud deployed successfully!"
+          echo "✅ Nextcloud deployed successfully from Blob Storage!"
 
       - name: Verify deployment
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
