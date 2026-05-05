@@ -25,14 +25,13 @@ provider "azurerm" {
   subscription_id = "45ab7c0b-0483-4cfa-b5bb-498a103b8661"
 }
 
-# Генериране на случаен суфикс за уникалност на ресурсите
 resource "random_integer" "ri" {
-  min = 10
-  max = 99
-  keepers = {
-    # Винаги се променя при всяко apply
-    timestamp = timestamp()
-  }
+  min = 10000
+  max = 99999
+}
+
+resource "terraform_data" "trigger" {
+  input = timestamp()
 }
 
 # Resource Group
@@ -51,36 +50,45 @@ resource "azurerm_service_plan" "asp" {
 }
 
 # ============================================
-# SQL Server (проверено, че работи с твоя акаунт)
+# MySQL Single Server (Basic план - поддържан от учебния акаунт)
 # ============================================
-resource "azurerm_mssql_server" "sqlserver" {
-  name                         = "${var.sql_server_name}-${random_integer.ri.result}"
-  resource_group_name          = azurerm_resource_group.arg.name
-  location                     = azurerm_resource_group.arg.location
-  version                      = "12.0"
-  administrator_login          = var.sql_admin_name
-  administrator_login_password = var.sql_admin_password
+resource "azurerm_mysql_server" "mysql" {
+  name                = "${var.mysql_server_name}-${random_integer.ri.result}"
+  resource_group_name = azurerm_resource_group.arg.name
+  location            = azurerm_resource_group.arg.location
+
+  sku_name = "B_Gen5_1"   # Basic план, 1 vCore, поддържан от учебния акаунт
+
+  storage_mb = 5120  # 5 GB - минимално
+
+  administrator_login          = var.mysql_admin_username
+  administrator_login_password = var.mysql_admin_password
+
+  version                = "8.0"
+  ssl_enforcement_enabled = false   # За тестови цели (за production включи SSL в connection string)
+
+  tags = var.tags
 }
 
-resource "azurerm_mssql_database" "database" {
-  name                 = var.sql_database_name
-  server_id            = azurerm_mssql_server.sqlserver.id
-  collation            = "SQL_Latin1_General_CP1_CI_AS"
-  license_type         = "LicenseIncluded"
-  max_size_gb          = 2
-  sku_name             = "S0"
-  zone_redundant       = false
-  storage_account_type = "Local"
+# MySQL Database
+resource "azurerm_mysql_database" "mysql_db" {
+  name                = var.mysql_database_name
+  resource_group_name = azurerm_resource_group.arg.name
+  server_name         = azurerm_mysql_server.mysql.name
+  charset             = "utf8mb4"
+  collation           = "utf8mb4_unicode_ci"
 }
 
-resource "azurerm_mssql_firewall_rule" "firewallrule" {
-  name             = var.firewall_rule_name
-  server_id        = azurerm_mssql_server.sqlserver.id
-  start_ip_address = "0.0.0.0"
-  end_ip_address   = "0.0.0.0"
+# Firewall Rule - позволява на Azure услуги (вкл. App Service) да се свързват
+resource "azurerm_mysql_firewall_rule" "allow_azure_services" {
+  name                = "AllowAllAzureServices"
+  resource_group_name = azurerm_resource_group.arg.name
+  server_name         = azurerm_mysql_server.mysql.name
+  start_ip_address    = "0.0.0.0"
+  end_ip_address      = "0.0.0.0"
 }
 
-# Linux Web App (.NET 6)
+# Linux Web App (PHP за Nextcloud)
 resource "azurerm_linux_web_app" "alwa" {
   name                = "${var.app_service_plan_name}-${random_integer.ri.result}"
   resource_group_name = azurerm_resource_group.arg.name
@@ -94,15 +102,14 @@ resource "azurerm_linux_web_app" "alwa" {
     always_on = false
   }
 
-  # Connection string за MySQL
-  connection_string {
-    name  = "DefaultConnection"
-    type  = "SQLAzure"
-    value = "Data Source=tcp:${azurerm_mssql_server.sqlserver.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.database.name};User ID=${azurerm_mssql_server.sqlserver.administrator_login};Password=${var.sql_admin_password};Trusted_Connection=False;MultipleActiveResultSets=True;Encrypt=True;"
-  }
-
   app_settings = {
     "WEBSITE_RUN_FROM_PACKAGE" = "0"
+  }
+
+  connection_string {
+    name  = "DefaultConnection"
+    type  = "MySQL"
+    value = "Database=${azurerm_mysql_database.mysql_db.name};Data Source=${azurerm_mysql_server.mysql.fqdn};User Id=${var.mysql_admin_username}@${azurerm_mysql_server.mysql.name};Password=${var.mysql_admin_password}"
   }
 
   tags = var.tags

@@ -6,7 +6,7 @@ variable "resource_group_name" {
 
 variable "location" {
   type        = string
-  description = "Azure region"
+  description = "Azure region (must be F1-supported)"
   default     = "switzerlandnorth"
 }
 
@@ -16,37 +16,37 @@ variable "app_service_plan_name" {
   default     = "asp-nextcloud"
 }
 
-variable "sql_server_name" {
+# ============================================
+# MySQL променливи (Single Server - Basic план)
+# ============================================
+variable "mysql_server_name" {
   type        = string
-  description = "SQL Server name"
-  default     = "sql-nextcloud"
+  description = "MySQL server name"
+  default     = "mysql-nextcloud"
 }
 
-variable "sql_admin_name" {
+variable "mysql_admin_username" {
   type        = string
-  description = "SQL Server admin username"
-  default     = "sqladmin"
+  description = "MySQL admin username"
+  default     = "mysqladmin"
 }
 
-variable "sql_admin_password" {
+variable "mysql_admin_password" {
   type        = string
-  description = "SQL Server admin password"
+  description = "MySQL admin password (must be at least 8 chars, containing uppercase, lowercase, numbers, special chars)"
   sensitive   = true
   default     = "MyP@ssw0rd123!"
 }
 
-variable "sql_database_name" {
+variable "mysql_database_name" {
   type        = string
-  description = "SQL Database name"
+  description = "MySQL database name"
   default     = "nextclouddb"
 }
 
-variable "firewall_rule_name" {
-  type        = string
-  description = "Firewall rule name"
-  default     = "AllowAllAzureServices"
-}
-
+# ============================================
+# Общи променливи
+# ============================================
 variable "tags" {
   type        = map(string)
   description = "Tags to apply to resources"
