@@ -89,10 +89,9 @@ resource "azurerm_linux_web_app" "alwa" {
 
   site_config {
     application_stack {
-      dotnet_version = "8.0"
+      php_version = "8.2"
     }
     always_on        = false
-    app_command_line = "dotnet Homies.dll"
   }
 
   # Connection string за MySQL
@@ -102,6 +101,9 @@ resource "azurerm_linux_web_app" "alwa" {
     value = "Data Source=tcp:${azurerm_mssql_server.sqlserver.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.database.name};User ID=${azurerm_mssql_server.sqlserver.administrator_login};Password=${var.sql_admin_password};Trusted_Connection=False;MultipleActiveResultSets=True;Encrypt=True;"
   }
 
+app_settings = {
+    "WEBSITE_RUN_FROM_PACKAGE" = "0"
+  }
 
   tags = var.tags
 }

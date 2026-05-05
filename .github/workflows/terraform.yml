@@ -1,4 +1,4 @@
-name: 'Terraform Azure Nextcloud'
+name: 'Terraform Nextcloud on PHP'
 
 on:
   push:
@@ -13,7 +13,7 @@ env:
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   ARM_ACCESS_KEY: ${{ secrets.AZURE_STORAGE_ACCESS_KEY }}
-  TF_VAR_mysql_admin_password: ${{ secrets.MYSQL_ADMIN_PASSWORD }}
+  TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
 
 jobs:
   terraform:
@@ -42,3 +42,39 @@ jobs:
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve tfplan
+
+      - name: Get Web App Name
+        id: webapp
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          WEBAPP_NAME=$(terraform output -raw web_app_name)
+          echo "webapp_name=$WEBAPP_NAME" >> $GITHUB_OUTPUT
+          echo "Resource Group: ${{ steps.webapp.outputs.resource_group }}"
+
+      - name: Download and Deploy Nextcloud
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "📥 Downloading latest Nextcloud..."
+          curl -L -o nextcloud.zip https://download.nextcloud.com/server/releases/latest.zip
+          
+          echo "📦 Extracting Nextcloud files..."
+          unzip -q nextcloud.zip
+          
+          echo "🚀 Deploying to ${{ steps.webapp.outputs.webapp_name }}..."
+          cd nextcloud
+          zip -r ../app.zip .
+          cd ..
+          
+          az webapp deploy \
+            --resource-group ${{ steps.webapp.outputs.resource_group }} \
+            --name ${{ steps.webapp.outputs.webapp_name }} \
+            --src-path app.zip \
+            --type zip
+          
+          echo "✅ Nextcloud deployed successfully!"
+
+      - name: Verify deployment
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "✅ Infrastructure and Nextcloud deployed successfully!"
+          echo "📍 Your Nextcloud is available at: https://${{ steps.webapp.outputs.webapp_name }}.azurewebsites.net"
