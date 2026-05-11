@@ -47,39 +47,53 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # ==========================================
-      # SEQUENTIAL SUFFIX (01-99)
+      # SEQUENTIAL SUFFIX (01-99) - FIXED
       # ==========================================
       - name: Get environment number
         env:
           STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
           STORAGE_CONTAINER: tfstate
         run: |
-          set -e
+          set -euo pipefail
 
-          echo "Storage account: $STORAGE_ACCOUNT"
+          if [ -z "${STORAGE_ACCOUNT}" ]; then
+            echo "ERROR: STORAGE_ACCOUNT is missing in GitHub Secrets"
+            exit 1
+          fi
+
+          echo "Using storage account: ${STORAGE_ACCOUNT}"
 
           LAST=$(az storage blob download \
-            --account-name "$STORAGE_ACCOUNT" \
-            --container-name "$STORAGE_CONTAINER" \
+            --account-name "${STORAGE_ACCOUNT}" \
+            --container-name "${STORAGE_CONTAINER}" \
             --name counter.txt \
             --auth-mode login \
             --query content -o tsv 2>/dev/null || echo "0")
 
           LAST_NUM=$(echo "$LAST" | tr -cd '0-9')
-          if [ -z "$LAST_NUM" ]; then LAST_NUM=0; fi
+          if [ -z "$LAST_NUM" ]; then
+            LAST_NUM=0
+          fi
 
           NEXT=$((10#$LAST_NUM + 1))
 
-          SUFFIX=$(printf "%02d" $NEXT)
+          if [ "$NEXT" -gt 99 ]; then
+            echo "ERROR: max environments reached (99)"
+            exit 1
+          fi
 
+          SUFFIX=$(printf "%02d" "$NEXT")
+
+          echo "Generated SUFFIX=$SUFFIX"
           echo "SUFFIX=$SUFFIX" >> $GITHUB_ENV
 
           echo "$SUFFIX" | az storage blob upload \
-            --account-name "$STORAGE_ACCOUNT" \
-            --container-name "$STORAGE_CONTAINER" \
+            --account-name "${STORAGE_ACCOUNT}" \
+            --container-name "${STORAGE_CONTAINER}" \
             --name counter.txt \
-            --overwrite \
-            --auth-mode login
+            --data @- \
+            --auth-mode login \
+            --overwrite
 
       # ==========================================
       # TERRAFORM SETUP
