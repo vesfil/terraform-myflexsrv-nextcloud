@@ -59,7 +59,7 @@ resource "azurerm_service_plan" "plan" {
   location            = azurerm_resource_group.rg.location
 
   os_type  = "Linux"
-  sku_name = "B1"
+  sku_name = "B2"
 }
 
 # ============================================================
@@ -126,7 +126,7 @@ resource "azurerm_linux_web_app" "nextcloud" {
     always_on = true
 
     application_stack {
-      docker_image_name = "nextcloud:31-apache"
+      docker_image_name = "nextcloud:30-apache"
     }
 
     app_command_line = ""
