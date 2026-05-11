@@ -1,9 +1,15 @@
+# ============================================================
+# TERRAFORM
+# ============================================================
 terraform {
+  required_version = ">= 1.5"
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "4.66.0"
     }
+
     random = {
       source  = "hashicorp/random"
       version = "3.8.1"
@@ -19,57 +25,130 @@ terraform {
   }
 }
 
+# ============================================================
+# PROVIDER
+# ============================================================
 provider "azurerm" {
   features {}
-  subscription_id = "45ab7c0b-0483-4cfa-b5bb-498a103b8661"
+
+  subscription_id = var.subscription_id
 }
 
+# ============================================================
+# RANDOM SUFFIX
+# ============================================================
 resource "random_integer" "ri" {
-  min = 10
-  max = 99
+  min = 100
+  max = 999
 }
 
-resource "terraform_data" "trigger" {
-  input = timestamp()
-}
-
-# Resource Group
-resource "azurerm_resource_group" "arg" {
+# ============================================================
+# RESOURCE GROUP
+# ============================================================
+resource "azurerm_resource_group" "rg" {
   name     = "${var.resource_group_name}-${random_integer.ri.result}"
   location = var.location
 }
 
-# App Service Plan (Linux, B1 - поддържа Docker)
-resource "azurerm_service_plan" "asp" {
+# ============================================================
+# APP SERVICE PLAN
+# ============================================================
+resource "azurerm_service_plan" "plan" {
   name                = "${var.app_service_plan_name}-${random_integer.ri.result}"
-  resource_group_name = azurerm_resource_group.arg.name
-  location            = azurerm_resource_group.arg.location
-  os_type             = "Linux"
-  sku_name            = "B1" # Basic план (има разход)
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+
+  os_type  = "Linux"
+  sku_name = "B1"
 }
 
-# Linux Web App с Docker образ на Nextcloud
-resource "azurerm_linux_web_app" "alwa" {
-  name                = "${var.app_service_plan_name}-${random_integer.ri.result}"
-  resource_group_name = azurerm_resource_group.arg.name
-  location            = azurerm_resource_group.arg.location
-  service_plan_id     = azurerm_service_plan.asp.id
+# ============================================================
+# MYSQL FLEXIBLE SERVER
+# ============================================================
+resource "azurerm_mysql_flexible_server" "mysql" {
+  name                   = "mysql-nextcloud-${random_integer.ri.result}"
+  resource_group_name    = azurerm_resource_group.rg.name
+  location               = azurerm_resource_group.rg.location
+
+  administrator_login    = var.mysql_admin_user
+  administrator_password = var.mysql_admin_password
+
+  sku_name = "B_Standard_B1ms"
+
+  version = "8.0.21"
+
+  backup_retention_days = 7
+
+  storage {
+    size_gb = 20
+  }
+
+  tags = var.tags
+}
+
+# ============================================================
+# MYSQL DATABASE
+# ============================================================
+resource "azurerm_mysql_flexible_database" "db" {
+  name                = var.mysql_database_name
+  resource_group_name = azurerm_resource_group.rg.name
+  server_name         = azurerm_mysql_flexible_server.mysql.name
+
+  charset   = "utf8mb4"
+  collation = "utf8mb4_unicode_ci"
+}
+
+# ============================================================
+# FIREWALL RULE
+# ============================================================
+resource "azurerm_mysql_flexible_server_firewall_rule" "allow_azure" {
+  name                = "AllowAzureServices"
+  resource_group_name = azurerm_resource_group.rg.name
+  server_name         = azurerm_mysql_flexible_server.mysql.name
+
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
+}
+
+# ============================================================
+# LINUX WEB APP (NEXTCLOUD)
+# ============================================================
+resource "azurerm_linux_web_app" "nextcloud" {
+  name                = "nextcloud-${random_integer.ri.result}"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+
+  service_plan_id = azurerm_service_plan.plan.id
+
+  https_only = true
 
   site_config {
-    always_on = false
+    always_on = true
+
     application_stack {
-      docker_image     = "nextcloud"
-      docker_image_tag = "latest"
+      docker_image_name = "nextcloud:31-apache"
     }
   }
 
   app_settings = {
-    "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "true"
-    "NEXTCLOUD_DATA_DIR"                  = "/home/site/wwwroot/data"
-    "MYSQL_DATABASE"                      = var.mysql_database_name
-    "MYSQL_USER"                          = var.mysql_user
-    "MYSQL_PASSWORD"                      = var.mysql_password
-    "MYSQL_HOST"                          = "localhost"
+    # Persistent storage
+    WEBSITES_ENABLE_APP_SERVICE_STORAGE = "true"
+
+    # Nextcloud
+    NEXTCLOUD_DATA_DIR          = "/home/site/wwwroot/data"
+    NEXTCLOUD_TRUSTED_DOMAINS   = "nextcloud-${random_integer.ri.result}.azurewebsites.net"
+    NEXTCLOUD_ADMIN_USER        = var.nextcloud_admin_user
+    NEXTCLOUD_ADMIN_PASSWORD    = var.nextcloud_admin_password
+
+    # MySQL
+    MYSQL_HOST                  = azurerm_mysql_flexible_server.mysql.fqdn
+    MYSQL_DATABASE              = azurerm_mysql_flexible_database.db.name
+    MYSQL_USER                  = "${var.mysql_admin_user}@${azurerm_mysql_flexible_server.mysql.name}"
+    MYSQL_PASSWORD              = var.mysql_admin_password
+
+    # PHP
+    PHP_MEMORY_LIMIT            = "512M"
+    PHP_UPLOAD_LIMIT            = "1024M"
   }
 
   tags = var.tags

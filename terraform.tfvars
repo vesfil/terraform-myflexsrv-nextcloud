@@ -1,12 +1,4 @@
-resource_group_name   = "rg-nextcloud"
-location              = "switzerlandnorth"
-app_service_plan_name = "asp-nextcloud"
+subscription_id = "45ab7c0b-0483-4cfa-b5bb-498a103b8661"
 
-mysql_database_name = "nextcloud"
-mysql_user          = "nextclouduser"
-mysql_password      = "MyP@ssw0rd123!"
-
-tags = {
-  environment = "development"
-  managed_by  = "terraform"
-}
+mysql_admin_password      = "70w8PZE5vGR2Carb_123!"
+nextcloud_admin_password  = "70w8PZE5vGR2Carb_456!"

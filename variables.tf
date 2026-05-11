@@ -1,48 +1,69 @@
-variable "resource_group_name" {
+# ============================================================
+# AZURE
+# ============================================================
+variable "subscription_id" {
   type        = string
-  description = "Resource group name"
-  default     = "rg-nextcloud"
+  description = "Azure Subscription ID"
+}
+
+variable "resource_group_name" {
+  type    = string
+  default = "rg-nextcloud"
 }
 
 variable "location" {
-  type        = string
-  description = "Azure region"
-  default     = "switzerlandnorth"
+  type    = string
+  default = "swedencentral"
 }
 
+# ============================================================
+# APP SERVICE
+# ============================================================
 variable "app_service_plan_name" {
-  type        = string
-  description = "App Service Plan name"
-  default     = "asp-nextcloud"
+  type    = string
+  default = "asp-nextcloud"
 }
 
-# ============================================
-# MySQL променливи (за Docker контейнера)
-# ============================================
+# ============================================================
+# MYSQL
+# ============================================================
 variable "mysql_database_name" {
-  type        = string
-  description = "MySQL database name"
-  default     = "nextcloud"
+  type    = string
+  default = "nextcloud"
 }
 
-variable "mysql_user" {
-  type        = string
-  description = "MySQL user"
-  default     = "nextclouduser"
+variable "mysql_admin_user" {
+  type    = string
+  default = "mysqladmin"
 }
 
-variable "mysql_password" {
-  type        = string
-  description = "MySQL password"
-  sensitive   = true
-  default     = "MyP@ssw0rd123!"
+variable "mysql_admin_password" {
+  type      = string
+  sensitive = true
 }
 
+# ============================================================
+# NEXTCLOUD
+# ============================================================
+variable "nextcloud_admin_user" {
+  type    = string
+  default = "admin"
+}
+
+variable "nextcloud_admin_password" {
+  type      = string
+  sensitive = true
+}
+
+# ============================================================
+# TAGS
+# ============================================================
 variable "tags" {
-  type        = map(string)
-  description = "Tags to apply to resources"
+  type = map(string)
+
   default = {
-    environment = "development"
+    environment = "production"
     managed_by  = "terraform"
+    app          = "nextcloud"
   }
 }
