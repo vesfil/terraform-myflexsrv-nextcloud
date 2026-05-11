@@ -6,4 +6,4 @@ mysql_admin_password = "70w8PZE5vGR2Carb_456!"
 nextcloud_admin_user     = "admin"
 nextcloud_admin_password = "70w8PZE5vGR2Carb"
 
-#environment_suffix = "dev"
+environment_suffix = "dev"
