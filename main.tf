@@ -63,8 +63,8 @@ resource "azurerm_mysql_flexible_server" "mysql" {
   administrator_login    = var.mysql_admin_user
   administrator_password = var.mysql_admin_password
 
-  sku_name  = "B_Standard_B1ms"
-  version   = "8.0.21"
+  sku_name = "B_Standard_B1ms"
+  version  = "8.0.21"
 
   storage {
     size_gb = 20
@@ -121,8 +121,8 @@ resource "azurerm_linux_web_app" "nextcloud" {
     }
 
     # FIX: Azure requirement (must be present if used)
-    health_check_path                     = "/status.php"
-    health_check_eviction_time_in_min     = 10
+    health_check_path                 = "/status.php"
+    health_check_eviction_time_in_min = 10
   }
 
   app_settings = {
@@ -130,8 +130,8 @@ resource "azurerm_linux_web_app" "nextcloud" {
     WEBSITES_PORT                       = "80"
     WEBSITES_CONTAINER_START_TIME_LIMIT = "1800"
 
-    NEXTCLOUD_ADMIN_USER     = var.nextcloud_admin_user
-    NEXTCLOUD_ADMIN_PASSWORD = var.nextcloud_admin_password
+    NEXTCLOUD_ADMIN_USER      = var.nextcloud_admin_user
+    NEXTCLOUD_ADMIN_PASSWORD  = var.nextcloud_admin_password
     NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${random_integer.suffix.result}.azurewebsites.net"
 
     # DB
@@ -141,8 +141,8 @@ resource "azurerm_linux_web_app" "nextcloud" {
     MYSQL_PASSWORD = var.mysql_admin_password
 
     # 🔥 CRITICAL FIX FOR YOUR ERROR
-    MYSQL_SSL_MODE = "required"
-
+    MYSQL_SSL_MODE    = "required"
+    MYSQL_ATTR_SSL_CA = "/etc/ssl/certs/ca-certificates.crt"
     # PHP tuning
     PHP_MEMORY_LIMIT = "512M"
     PHP_UPLOAD_LIMIT = "1024M"
