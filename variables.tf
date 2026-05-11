@@ -7,10 +7,10 @@ variable "location" {
   default = "swedencentral"
 }
 
-variable "resource_group_name" {
-  type    = string
-  default = "rg-nextcloud"
-}
+#variable "resource_group_name" {
+#  type    = string
+#  default = "rg-nextcloud"
+#}
 
 variable "mysql_admin_user" {
   type = string
