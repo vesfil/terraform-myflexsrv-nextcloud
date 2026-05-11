@@ -125,6 +125,8 @@ resource "azurerm_linux_web_app" "nextcloud" {
   site_config {
     always_on = true
 
+    health_check_path = "/status.php"
+
     app_command_line = "/entrypoint.sh apache2-foreground"
 
     application_stack {
@@ -133,13 +135,13 @@ resource "azurerm_linux_web_app" "nextcloud" {
   }
 
   app_settings = {
-    WEBSITES_ENABLE_APP_SERVICE_STORAGE = "true"
+    #WEBSITES_ENABLE_APP_SERVICE_STORAGE = "true"
     WEBSITES_PORT                       = "80"
 
     # IMPORTANT
     WEBSITES_CONTAINER_START_TIME_LIMIT = "1800"
 
-    NEXTCLOUD_DATA_DIR = "/home/site/wwwroot/data"
+    #NEXTCLOUD_DATA_DIR = "/home/site/wwwroot/data"
 
     NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${random_integer.ri.result}.azurewebsites.net"
 
