@@ -75,6 +75,12 @@ resource "azurerm_mysql_flexible_server" "mysql" {
   tags = var.tags
 }
 
+resource "azurerm_mysql_flexible_server_configuration" "tls" {
+  name                = "require_secure_transport"
+  resource_group_name = azurerm_resource_group.rg.name
+  server_name         = azurerm_mysql_flexible_server.mysql.name
+  value               = "OFF"
+}
 # ============================================================
 # MYSQL DATABASE
 # ============================================================
@@ -114,32 +120,25 @@ resource "azurerm_linux_web_app" "nextcloud" {
   site_config {
     always_on = true
 
-    health_check_path                 = "/status.php"
-    health_check_eviction_time_in_min = 10
-
     application_stack {
       docker_image_name = "nextcloud:30-apache"
     }
   }
 
   app_settings = {
-    WEBSITES_ENABLE_APP_SERVICE_STORAGE = "true"
+    WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
     WEBSITES_PORT                       = "80"
     WEBSITES_CONTAINER_START_TIME_LIMIT = "1800"
 
-    NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${local.suffix}.azurewebsites.net"
-
     NEXTCLOUD_ADMIN_USER     = var.nextcloud_admin_user
     NEXTCLOUD_ADMIN_PASSWORD = var.nextcloud_admin_password
+
+    NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${local.suffix}.azurewebsites.net"
 
     MYSQL_HOST     = azurerm_mysql_flexible_server.mysql.fqdn
     MYSQL_DATABASE = azurerm_mysql_flexible_database.db.name
     MYSQL_USER     = var.mysql_admin_user
     MYSQL_PASSWORD = var.mysql_admin_password
-
-    MYSQL_SSL_CA       = "/etc/ssl/certs/ca-certificates.crt"
-    MYSQL_SSL_MODE     = "required"
-    MYSQL_CLIENT_FLAGS = "2048"
 
     PHP_MEMORY_LIMIT = "512M"
     PHP_UPLOAD_LIMIT = "1024M"
@@ -153,22 +152,7 @@ resource "azurerm_linux_web_app" "nextcloud" {
 
   depends_on = [
     azurerm_mysql_flexible_database.db,
-    azurerm_mysql_flexible_server_firewall_rule.allow_azure
+    azurerm_mysql_flexible_server_firewall_rule.allow_azure,
+    azurerm_mysql_flexible_server_configuration.tls
   ]
-
-  logs {
-    detailed_error_messages = true
-    failed_request_tracing  = true
-
-    application_logs {
-      file_system_level = "Verbose"
-    }
-
-    http_logs {
-      file_system {
-        retention_in_days = 7
-        retention_in_mb   = 35
-      }
-    }
-  }
 }
