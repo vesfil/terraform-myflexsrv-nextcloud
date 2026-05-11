@@ -136,7 +136,9 @@ resource "azurerm_linux_web_app" "nextcloud" {
       docker_image_name = "nextcloud:30-apache"
     }
 
-    health_check_path = "/status.php"
+    # HEALTH CHECK (FIXED PAIR - AzureRM requirement)
+    health_check_path                 = "/status.php"
+    health_check_eviction_time_in_min = 10
   }
 
   app_settings = {
