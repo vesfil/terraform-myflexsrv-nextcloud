@@ -114,7 +114,7 @@ resource "azurerm_linux_web_app" "nextcloud" {
     }
 
     # FIX REQUIRED BY AZURE PROVIDER
-    health_check_path = "/status.php"
+    health_check_path                 = "/status.php"
     health_check_eviction_time_in_min = 10
   }
 
@@ -130,8 +130,8 @@ resource "azurerm_linux_web_app" "nextcloud" {
     # ========================================================
     # NEXTCLOUD AUTH
     # ========================================================
-    NEXTCLOUD_ADMIN_USER     = var.nextcloud_admin_user
-    NEXTCLOUD_ADMIN_PASSWORD = var.nextcloud_admin_password
+    NEXTCLOUD_ADMIN_USER      = var.nextcloud_admin_user
+    NEXTCLOUD_ADMIN_PASSWORD  = var.nextcloud_admin_password
     NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${random_integer.suffix.result}.azurewebsites.net"
 
     # ========================================================
