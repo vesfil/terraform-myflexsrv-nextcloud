@@ -27,16 +27,25 @@ provider "azurerm" {
   subscription_id = var.subscription_id
 }
 
-resource "random_integer" "suffix" {
-  min = 100
-  max = 999
-}
+#resource "random_integer" "suffix" {
+#  min = 100
+#  max = 999
+#}
 
+#resource "azurerm_resource_group" "rg" {
+#  name     = "rg-nextcloud-${var.suffix}"
+#  location = var.location
+#}
+
+locals {
+  suffix = var.environment_suffix
+}
 # =========================
 # RESOURCE GROUP
 # =========================
 resource "azurerm_resource_group" "rg" {
-  name     = "${var.resource_group_name}-${random_integer.suffix.result}"
+  #name     = "${var.resource_group_name}-${random_integer.suffix.result}"
+  name     = "rg-nextcloud-${local.suffix}"
   location = var.location
 }
 
@@ -44,7 +53,9 @@ resource "azurerm_resource_group" "rg" {
 # SERVICE PLAN
 # =========================
 resource "azurerm_service_plan" "plan" {
-  name                = "${var.app_service_plan_name}-${random_integer.suffix.result}"
+  #name                = "${var.app_service_plan_name}-${random_integer.suffix.result}"
+  #name                = "asp-nextcloud-${var.suffix}"
+  name                = "asp-nextcloud-${local.suffix}"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
 
@@ -56,7 +67,9 @@ resource "azurerm_service_plan" "plan" {
 # MYSQL FLEXIBLE SERVER
 # =========================
 resource "azurerm_mysql_flexible_server" "mysql" {
-  name                = "mysql-nextcloud-${random_integer.suffix.result}"
+  #name                = "mysql-nextcloud-${random_integer.suffix.result}"
+  #name                = "mysql-nextcloud-${var.suffix}"
+  name                = "mysql-nextcloud-${local.suffix}"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
 
@@ -80,7 +93,8 @@ resource "azurerm_mysql_flexible_server" "mysql" {
 # DATABASE
 # =========================
 resource "azurerm_mysql_flexible_database" "db" {
-  name                = var.mysql_database_name
+  name = var.mysql_database_name
+  #name                = "nextcloud-${var.suffix}"
   resource_group_name = azurerm_resource_group.rg.name
   server_name         = azurerm_mysql_flexible_server.mysql.name
 
@@ -104,7 +118,8 @@ resource "azurerm_mysql_flexible_server_firewall_rule" "allow_azure" {
 # NEXTCLOUD WEB APP
 # =========================
 resource "azurerm_linux_web_app" "nextcloud" {
-  name                = "nextcloud-${random_integer.suffix.result}"
+  #name                = "nextcloud-${random_integer.suffix.result}"
+  name                = "nextcloud-${local.suffix}"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
 
@@ -130,9 +145,10 @@ resource "azurerm_linux_web_app" "nextcloud" {
     WEBSITES_PORT                       = "80"
     WEBSITES_CONTAINER_START_TIME_LIMIT = "1800"
 
-    NEXTCLOUD_ADMIN_USER      = var.nextcloud_admin_user
-    NEXTCLOUD_ADMIN_PASSWORD  = var.nextcloud_admin_password
-    NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${random_integer.suffix.result}.azurewebsites.net"
+    NEXTCLOUD_ADMIN_USER     = var.nextcloud_admin_user
+    NEXTCLOUD_ADMIN_PASSWORD = var.nextcloud_admin_password
+    #NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${random_integer.suffix.result}.azurewebsites.net"
+    NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${local.suffix}.azurewebsites.net"
 
     # DB
     MYSQL_HOST     = azurerm_mysql_flexible_server.mysql.fqdn
@@ -141,12 +157,22 @@ resource "azurerm_linux_web_app" "nextcloud" {
     MYSQL_PASSWORD = var.mysql_admin_password
 
     # 🔥 CRITICAL FIX FOR YOUR ERROR
-    MYSQL_SSL_MODE    = "required"
-    MYSQL_ATTR_SSL_CA = "/etc/ssl/certs/ca-certificates.crt"
+    MYSQL_ATTR_SSL_CA  = "/etc/ssl/certs/ca-certificates.crt"
+    MYSQL_SSL_MODE     = "required"
+    MYSQL_CLIENT_FLAGS = "2048"
     # PHP tuning
     PHP_MEMORY_LIMIT = "512M"
     PHP_UPLOAD_LIMIT = "1024M"
   }
 
+  identity {
+    type = "SystemAssigned"
+  }
+
   tags = var.tags
+
+  depends_on = [
+    azurerm_mysql_flexible_database.db,
+    azurerm_mysql_flexible_server_firewall_rule.allow_azure
+  ]
 }

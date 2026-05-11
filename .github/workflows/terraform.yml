@@ -1,45 +1,159 @@
-name: Terraform Deploy
+name: Terraform PR Environment
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  TF_IN_AUTOMATION: true
+
 jobs:
-  terraform:
+
+  # =========================================================
+  # DEPLOY EPHEMERAL ENVIRONMENT
+  # =========================================================
+  deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
+
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
 
     steps:
+      # =====================================================
+      # CHECKOUT
+      # =====================================================
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ==========================================
+      # =====================================================
       # AZURE LOGIN
-      # ==========================================
+      # =====================================================
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          
 
-      # ==========================================
+      # =====================================================
       # TERRAFORM
-      # ==========================================
+      # =====================================================
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform Init
-        run: terraform init
+      # =====================================================
+      # GENERATE UNIQUE SUFFIX
+      # =====================================================
+      - name: Generate Environment Suffix
+        run: |
+          echo "TF_VAR_environment_suffix=pr${PR_NUMBER}" >> $GITHUB_ENV
 
+      # =====================================================
+      # TERRAFORM INIT
+      # =====================================================
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="key=pr-${PR_NUMBER}.tfstate"
+
+      # =====================================================
+      # VALIDATE
+      # =====================================================
       - name: Terraform Validate
         run: terraform validate
 
+      # =====================================================
+      # PLAN
+      # =====================================================
       - name: Terraform Plan
-        run: terraform plan
+        run: |
+          terraform plan \
+            -var="environment_suffix=pr${PR_NUMBER}" \
+            -out=tfplan
 
+      # =====================================================
+      # APPLY
+      # =====================================================
       - name: Terraform Apply
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve tfplan
 
+      # =====================================================
+      # OUTPUTS
+      # =====================================================
       - name: Terraform Output
         run: terraform output
+
+      # =====================================================
+      # COMMENT PR
+      # =====================================================
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `
+              ✅ PR Environment deployed successfully
+
+              Environment:
+              pr${process.env.PR_NUMBER}
+
+              Terraform state:
+              pr-${process.env.PR_NUMBER}.tfstate
+              `
+            })
+
+  # =========================================================
+  # AUTO DESTROY WHEN PR CLOSED
+  # =========================================================
+  destroy:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+
+    steps:
+      # =====================================================
+      # CHECKOUT
+      # =====================================================
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # =====================================================
+      # AZURE LOGIN
+      # =====================================================
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # =====================================================
+      # TERRAFORM
+      # =====================================================
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # =====================================================
+      # TERRAFORM INIT
+      # =====================================================
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="key=pr-${PR_NUMBER}.tfstate"
+
+      # =====================================================
+      # DESTROY
+      # =====================================================
+      - name: Terraform Destroy
+        run: |
+          terraform destroy \
+            -auto-approve \
+            -var="environment_suffix=pr${PR_NUMBER}"

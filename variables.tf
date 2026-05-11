@@ -67,3 +67,12 @@ variable "tags" {
     app         = "nextcloud"
   }
 }
+
+variable "suffix" {
+  type        = string
+  description = "Unique environment suffix"
+}
+
+variable "environment_suffix" {
+  type = string
+}
