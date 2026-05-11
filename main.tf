@@ -128,9 +128,13 @@ resource "azurerm_linux_web_app" "nextcloud" {
     application_stack {
       docker_image_name = "nextcloud:31-apache"
     }
+
+    app_command_line = ""
   }
 
   app_settings = {
+    DOCKER_ENABLE_CI = "true"
+    WEBSITES_PORT = "80"
     # Persistent storage
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "true"
 
