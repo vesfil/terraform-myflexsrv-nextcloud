@@ -134,7 +134,7 @@ resource "azurerm_linux_web_app" "nextcloud" {
 
   app_settings = {
     DOCKER_ENABLE_CI = "true"
-    WEBSITES_PORT = "80"
+    WEBSITES_PORT    = "80"
     # Persistent storage
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "true"
 
