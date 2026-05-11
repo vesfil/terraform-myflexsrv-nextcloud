@@ -138,7 +138,7 @@ resource "azurerm_linux_web_app" "nextcloud" {
   }
 
   app_settings = {
-    #WEBSITES_ENABLE_APP_SERVICE_STORAGE = "true"
+    WEBSITES_ENABLE_APP_SERVICE_STORAGE = "true"
     WEBSITES_PORT                       = "80"
 
     # IMPORTANT
@@ -159,7 +159,9 @@ resource "azurerm_linux_web_app" "nextcloud" {
     MYSQL_PASSWORD = var.mysql_admin_password
 
     # SSL
-    MYSQL_CLIENT_FLAGS = "MYSQLI_CLIENT_SSL"
+    MYSQL_SSL_MODE    = "required"
+    MYSQL_CLIENT_FLAGS = "2048"
+    MYSQL_SSL_CA = "/etc/ssl/certs/ca-certificates.crt"
 
     PHP_MEMORY_LIMIT = "512M"
     PHP_UPLOAD_LIMIT = "1024M"
