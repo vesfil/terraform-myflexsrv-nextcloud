@@ -133,24 +133,29 @@ resource "azurerm_linux_web_app" "nextcloud" {
   }
 
   app_settings = {
-    DOCKER_ENABLE_CI = "true"
-    WEBSITES_PORT    = "80"
-    # Persistent storage
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "true"
+    WEBSITES_PORT                       = "80"
 
-    # Nextcloud
-    NEXTCLOUD_DATA_DIR        = "/home/site/wwwroot/data"
+    # IMPORTANT
+    WEBSITES_CONTAINER_START_TIME_LIMIT = "1800"
+
+    NEXTCLOUD_DATA_DIR = "/home/site/wwwroot/data"
+
     NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${random_integer.ri.result}.azurewebsites.net"
-    NEXTCLOUD_ADMIN_USER      = var.nextcloud_admin_user
-    NEXTCLOUD_ADMIN_PASSWORD  = var.nextcloud_admin_password
 
-    # MySQL
+    NEXTCLOUD_ADMIN_USER     = var.nextcloud_admin_user
+    NEXTCLOUD_ADMIN_PASSWORD = var.nextcloud_admin_password
+
     MYSQL_HOST     = azurerm_mysql_flexible_server.mysql.fqdn
     MYSQL_DATABASE = azurerm_mysql_flexible_database.db.name
-    MYSQL_USER     = "${var.mysql_admin_user}@${azurerm_mysql_flexible_server.mysql.name}"
+
+    # IMPORTANT
+    MYSQL_USER     = var.mysql_admin_user
     MYSQL_PASSWORD = var.mysql_admin_password
 
-    # PHP
+    # SSL
+    MYSQL_CLIENT_FLAGS = "MYSQLI_CLIENT_SSL"
+
     PHP_MEMORY_LIMIT = "512M"
     PHP_UPLOAD_LIMIT = "1024M"
   }
