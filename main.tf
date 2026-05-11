@@ -66,9 +66,9 @@ resource "azurerm_service_plan" "plan" {
 # MYSQL FLEXIBLE SERVER
 # ============================================================
 resource "azurerm_mysql_flexible_server" "mysql" {
-  name                   = "mysql-nextcloud-${random_integer.ri.result}"
-  resource_group_name    = azurerm_resource_group.rg.name
-  location               = azurerm_resource_group.rg.location
+  name                = "mysql-nextcloud-${random_integer.ri.result}"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
 
   administrator_login    = var.mysql_admin_user
   administrator_password = var.mysql_admin_password
@@ -135,20 +135,20 @@ resource "azurerm_linux_web_app" "nextcloud" {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "true"
 
     # Nextcloud
-    NEXTCLOUD_DATA_DIR          = "/home/site/wwwroot/data"
-    NEXTCLOUD_TRUSTED_DOMAINS   = "nextcloud-${random_integer.ri.result}.azurewebsites.net"
-    NEXTCLOUD_ADMIN_USER        = var.nextcloud_admin_user
-    NEXTCLOUD_ADMIN_PASSWORD    = var.nextcloud_admin_password
+    NEXTCLOUD_DATA_DIR        = "/home/site/wwwroot/data"
+    NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${random_integer.ri.result}.azurewebsites.net"
+    NEXTCLOUD_ADMIN_USER      = var.nextcloud_admin_user
+    NEXTCLOUD_ADMIN_PASSWORD  = var.nextcloud_admin_password
 
     # MySQL
-    MYSQL_HOST                  = azurerm_mysql_flexible_server.mysql.fqdn
-    MYSQL_DATABASE              = azurerm_mysql_flexible_database.db.name
-    MYSQL_USER                  = "${var.mysql_admin_user}@${azurerm_mysql_flexible_server.mysql.name}"
-    MYSQL_PASSWORD              = var.mysql_admin_password
+    MYSQL_HOST     = azurerm_mysql_flexible_server.mysql.fqdn
+    MYSQL_DATABASE = azurerm_mysql_flexible_database.db.name
+    MYSQL_USER     = "${var.mysql_admin_user}@${azurerm_mysql_flexible_server.mysql.name}"
+    MYSQL_PASSWORD = var.mysql_admin_password
 
     # PHP
-    PHP_MEMORY_LIMIT            = "512M"
-    PHP_UPLOAD_LIMIT            = "1024M"
+    PHP_MEMORY_LIMIT = "512M"
+    PHP_UPLOAD_LIMIT = "1024M"
   }
 
   tags = var.tags

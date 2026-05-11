@@ -64,6 +64,6 @@ variable "tags" {
   default = {
     environment = "production"
     managed_by  = "terraform"
-    app          = "nextcloud"
+    app         = "nextcloud"
   }
 }
