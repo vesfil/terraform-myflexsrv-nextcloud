@@ -132,7 +132,7 @@ resource "azurerm_linux_web_app" "nextcloud" {
 
     NEXTCLOUD_ADMIN_USER     = var.nextcloud_admin_user
     NEXTCLOUD_ADMIN_PASSWORD = var.nextcloud_admin_password
-    NEXTCLOUD_TRUSTED_DOMAINS = "${azurerm_linux_web_app.nextcloud.name}.azurewebsites.net"
+    NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${random_integer.suffix.result}.azurewebsites.net"
 
     # DB
     MYSQL_HOST     = azurerm_mysql_flexible_server.mysql.fqdn
