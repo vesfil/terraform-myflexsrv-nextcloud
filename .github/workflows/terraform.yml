@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v4
 
       # ==========================================
-      # AZURE LOGIN (needed for counter)
+      # AZURE LOGIN
       # ==========================================
       - name: Azure Login
         uses: azure/login@v2
@@ -47,27 +47,39 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # ==========================================
-      # GET SEQUENTIAL SUFFIX (01-99)
+      # SEQUENTIAL SUFFIX (01-99)
       # ==========================================
       - name: Get environment number
+        env:
+          STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
+          STORAGE_CONTAINER: tfstate
         run: |
+          set -e
+
+          echo "Storage account: $STORAGE_ACCOUNT"
+
           LAST=$(az storage blob download \
-            --account-name ${{ secrets.STORAGE_ACCOUNT }} \
-            --container-name tfstate \
+            --account-name "$STORAGE_ACCOUNT" \
+            --container-name "$STORAGE_CONTAINER" \
             --name counter.txt \
+            --auth-mode login \
             --query content -o tsv 2>/dev/null || echo "0")
 
-          NEXT=$((10#$LAST + 1))
+          LAST_NUM=$(echo "$LAST" | tr -cd '0-9')
+          if [ -z "$LAST_NUM" ]; then LAST_NUM=0; fi
+
+          NEXT=$((10#$LAST_NUM + 1))
 
           SUFFIX=$(printf "%02d" $NEXT)
 
           echo "SUFFIX=$SUFFIX" >> $GITHUB_ENV
 
-          echo $SUFFIX | az storage blob upload \
-            --account-name ${{ secrets.STORAGE_ACCOUNT }} \
-            --container-name tfstate \
+          echo "$SUFFIX" | az storage blob upload \
+            --account-name "$STORAGE_ACCOUNT" \
+            --container-name "$STORAGE_CONTAINER" \
             --name counter.txt \
-            --overwrite
+            --overwrite \
+            --auth-mode login
 
       # ==========================================
       # TERRAFORM SETUP
@@ -76,7 +88,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       # ==========================================
-      # INIT (dynamic backend per env)
+      # INIT
       # ==========================================
       - name: Terraform Init
         run: |
