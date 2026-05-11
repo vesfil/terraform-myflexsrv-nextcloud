@@ -1,14 +1,5 @@
-# ============================================================
-# AZURE
-# ============================================================
 variable "subscription_id" {
-  type        = string
-  description = "Azure Subscription ID"
-}
-
-variable "resource_group_name" {
-  type    = string
-  default = "rg-nextcloud"
+  type = string
 }
 
 variable "location" {
@@ -16,25 +7,13 @@ variable "location" {
   default = "swedencentral"
 }
 
-# ============================================================
-# APP SERVICE
-# ============================================================
-variable "app_service_plan_name" {
+variable "resource_group_name" {
   type    = string
-  default = "asp-nextcloud"
-}
-
-# ============================================================
-# MYSQL
-# ============================================================
-variable "mysql_database_name" {
-  type    = string
-  default = "nextcloud"
+  default = "rg-nextcloud"
 }
 
 variable "mysql_admin_user" {
-  type    = string
-  default = "mysqladmin"
+  type = string
 }
 
 variable "mysql_admin_password" {
@@ -42,12 +21,13 @@ variable "mysql_admin_password" {
   sensitive = true
 }
 
-# ============================================================
-# NEXTCLOUD
-# ============================================================
-variable "nextcloud_admin_user" {
+variable "mysql_database_name" {
   type    = string
-  default = "admin"
+  default = "nextcloud"
+}
+
+variable "nextcloud_admin_user" {
+  type = string
 }
 
 variable "nextcloud_admin_password" {
@@ -55,9 +35,10 @@ variable "nextcloud_admin_password" {
   sensitive = true
 }
 
-# ============================================================
-# TAGS
-# ============================================================
+variable "environment_suffix" {
+  type = string
+}
+
 variable "tags" {
   type = map(string)
 
@@ -66,13 +47,4 @@ variable "tags" {
     managed_by  = "terraform"
     app         = "nextcloud"
   }
-}
-
-variable "suffix" {
-  type        = string
-  description = "Unique environment suffix"
-}
-
-variable "environment_suffix" {
-  type = string
 }
