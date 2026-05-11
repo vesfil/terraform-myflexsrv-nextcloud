@@ -127,6 +127,9 @@ resource "azurerm_linux_web_app" "nextcloud" {
 
     health_check_path = "/status.php"
 
+    health_check_eviction_time_in_min = 10
+
+
     app_command_line = "/entrypoint.sh apache2-foreground"
 
     application_stack {
