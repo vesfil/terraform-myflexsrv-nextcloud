@@ -125,11 +125,11 @@ resource "azurerm_linux_web_app" "nextcloud" {
   site_config {
     always_on = true
 
+    app_command_line = "/entrypoint.sh apache2-foreground"
+
     application_stack {
       docker_image_name = "nextcloud:30-apache"
     }
-
-    app_command_line = ""
   }
 
   app_settings = {
