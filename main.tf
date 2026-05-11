@@ -155,4 +155,20 @@ resource "azurerm_linux_web_app" "nextcloud" {
     azurerm_mysql_flexible_database.db,
     azurerm_mysql_flexible_server_firewall_rule.allow_azure
   ]
+
+  logs {
+  detailed_error_messages = true
+  failed_request_tracing  = true
+
+  application_logs {
+    file_system_level = "Verbose"
+  }
+
+  http_logs {
+    file_system {
+      retention_in_days = 7
+      retention_in_mb   = 35
+    }
+  }
+}
 }
