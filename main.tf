@@ -62,7 +62,7 @@ resource "azurerm_service_plan" "plan" {
 }
 
 # ============================================================
-# MYSQL FLEXIBLE SERVER
+# MYSQL FLEXIBLE SERVER (SECURE - DO NOT DISABLE SSL)
 # ============================================================
 resource "azurerm_mysql_flexible_server" "mysql" {
   name                = "nc-mysql-${random_integer.suffix.result}"
@@ -75,17 +75,17 @@ resource "azurerm_mysql_flexible_server" "mysql" {
   sku_name = "B_Standard_B2s"
   version  = "8.0.21"
 
-  #backup_retention_days = 7
-
   storage {
     size_gb = 32
   }
+
+  #backup_retention_days = 7
 
   tags = var.tags
 }
 
 # ============================================================
-# ENSURE SSL IS REQUIRED (CORRECT WAY)
+# FORCE TLS REQUIREMENT (KEEP ON)
 # ============================================================
 resource "azurerm_mysql_flexible_server_configuration" "require_secure_transport" {
   name                = "require_secure_transport"
@@ -95,31 +95,7 @@ resource "azurerm_mysql_flexible_server_configuration" "require_secure_transport
 }
 
 # ============================================================
-# DATABASE
-# ============================================================
-resource "azurerm_mysql_flexible_database" "db" {
-  name                = var.mysql_database_name
-  resource_group_name = azurerm_resource_group.rg.name
-  server_name         = azurerm_mysql_flexible_server.mysql.name
-
-  charset   = "utf8mb4"
-  collation = "utf8mb4_unicode_ci"
-}
-
-# ============================================================
-# FIREWALL
-# ============================================================
-resource "azurerm_mysql_flexible_server_firewall_rule" "allow_azure" {
-  name                = "AllowAzureServices"
-  resource_group_name = azurerm_resource_group.rg.name
-  server_name         = azurerm_mysql_flexible_server.mysql.name
-
-  start_ip_address = "0.0.0.0"
-  end_ip_address   = "0.0.0.0"
-}
-
-# ============================================================
-# NEXTCLOUD APP SERVICE
+# NEXTCLOUD WEB APP
 # ============================================================
 resource "azurerm_linux_web_app" "nextcloud" {
   name                = "nextcloud-${random_integer.suffix.result}"
@@ -127,7 +103,8 @@ resource "azurerm_linux_web_app" "nextcloud" {
   location            = azurerm_resource_group.rg.location
 
   service_plan_id = azurerm_service_plan.plan.id
-  https_only      = true
+
+  https_only = true
 
   site_config {
     always_on = true
@@ -136,8 +113,8 @@ resource "azurerm_linux_web_app" "nextcloud" {
       docker_image_name = "nextcloud:30-apache"
     }
 
-    # HEALTH CHECK (FIXED PAIR - AzureRM requirement)
-    health_check_path                 = "/status.php"
+    # FIX REQUIRED BY AZURE PROVIDER
+    health_check_path = "/status.php"
     health_check_eviction_time_in_min = 10
   }
 
@@ -151,10 +128,10 @@ resource "azurerm_linux_web_app" "nextcloud" {
     WEBSITES_CONTAINER_START_TIME_LIMIT = "1800"
 
     # ========================================================
-    # NEXTCLOUD
+    # NEXTCLOUD AUTH
     # ========================================================
-    NEXTCLOUD_ADMIN_USER      = var.nextcloud_admin_user
-    NEXTCLOUD_ADMIN_PASSWORD  = var.nextcloud_admin_password
+    NEXTCLOUD_ADMIN_USER     = var.nextcloud_admin_user
+    NEXTCLOUD_ADMIN_PASSWORD = var.nextcloud_admin_password
     NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${random_integer.suffix.result}.azurewebsites.net"
 
     # ========================================================
@@ -166,10 +143,15 @@ resource "azurerm_linux_web_app" "nextcloud" {
     MYSQL_PASSWORD = var.mysql_admin_password
 
     # ========================================================
-    # SSL FIX (IMPORTANT)
+    # 🔥 CRITICAL SSL FIX FOR PDO (THIS IS THE REAL FIX)
     # ========================================================
     MYSQL_SSL_MODE = "REQUIRED"
-    SSL_CERT_FILE  = "/etc/ssl/certs/ca-certificates.crt"
+
+    # Force PHP CA bundle for TLS validation
+    SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt"
+
+    # IMPORTANT: forces PDO SSL capability in many builds
+    MYSQL_CLIENT_FLAGS = "2048"
 
     # ========================================================
     # PERFORMANCE
