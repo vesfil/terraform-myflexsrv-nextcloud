@@ -135,6 +135,11 @@ resource "azurerm_linux_web_app" "nextcloud" {
 
     NEXTCLOUD_TRUSTED_DOMAINS = "nextcloud-${local.suffix}.azurewebsites.net"
 
+    TRUSTED_PROXIES  = "0.0.0.0/0"
+    OVERWRITEHOST    = "nextcloud-${local.suffix}.azurewebsites.net"
+    OVERWRITEPROTOCOL = "https"
+    OVERWRITECLIURL  = "https://nextcloud-${local.suffix}.azurewebsites.net"
+
     MYSQL_HOST     = azurerm_mysql_flexible_server.mysql.fqdn
     MYSQL_DATABASE = azurerm_mysql_flexible_database.db.name
     MYSQL_USER     = var.mysql_admin_user
